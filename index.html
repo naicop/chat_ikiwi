@@ -101,36 +101,40 @@
     </button>
   </div>
 
-  <script>
-    var chatReady = false;
+ <script>
+  var chatReady = false;
 
-    function openChat() {
-      if (window.$chatwoot) {
-        window.$chatwoot.toggle('open');
-      }
+  function openChat() {
+    if (window.$chatwoot) {
+      window.$chatwoot.toggle('open');
     }
+  }
 
-    function setCardState(loaderHidden, title, desc, showButton) {
-      var loaderEl = document.getElementById('loader');
-      var titleEl = document.getElementById('card-title');
-      var descEl = document.getElementById('card-desc');
-      var btnEl = document.getElementById('reopen-btn');
+  function setCardState(loaderHidden, title, desc, showButton) {
+    var loaderEl = document.getElementById('loader');
+    var titleEl = document.getElementById('card-title');
+    var descEl = document.getElementById('card-desc');
+    var btnEl = document.getElementById('reopen-btn');
 
-      if (loaderEl) loaderEl.style.display = loaderHidden ? 'none' : '';
-      if (titleEl) titleEl.innerText = title;
-      if (descEl) descEl.innerText = desc;
-      if (btnEl) btnEl.style.display = showButton ? 'block' : 'none';
-    }
+    if (loaderEl) loaderEl.style.display = loaderHidden ? 'none' : '';
+    if (titleEl) titleEl.innerText = title;
+    if (descEl) descEl.innerText = desc;
+    if (btnEl) btnEl.style.display = showButton ? 'block' : 'none';
+  }
 
-    function setupChatwootUser() {
-      if (chatReady || !window.$chatwoot) return;
-      chatReady = true;
+  function setupChatwootUser() {
+    if (chatReady || !window.$chatwoot) return;
+    chatReady = true;
 
+    // Pequeña pausa para asegurar que el iframe del SDK esté listo para recibir datos
+    setTimeout(function() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const nombre = urlParams.get('nombre');
-        let phone = urlParams.get('phone');
-        const email = urlParams.get('email');
+        
+        // Decodificamos de forma segura los parámetros URL
+        const nombre = urlParams.get('nombre') ? decodeURIComponent(urlParams.get('nombre')) : null;
+        const email = urlParams.get('email') ? decodeURIComponent(urlParams.get('email')) : null;
+        let phone = urlParams.get('phone') ? decodeURIComponent(urlParams.get('phone')) : null;
 
         if (phone) {
           phone = phone.trim();
@@ -139,23 +143,27 @@
           }
         }
 
+        // Identifier único para la sesión
         const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
-        const userAttributes = { name: nombre || "Usuario de WhatsApp" };
+        
+        const userAttributes = { 
+          name: nombre || "Usuario de WhatsApp" 
+        };
         if (email) userAttributes.email = email;
         if (phone) userAttributes.phone_number = phone;
 
+        // 1. Seteamos la identidad del usuario
         window.$chatwoot.setUser(identifier, userAttributes);
+
+        // 2. Seteamos atributos personalizados
+        const utmSource = urlParams.get('utm_source') || 'WhatsApp Migration';
+        window.$chatwoot.setCustomAttributes({ origen: utmSource });
+
       } catch (e) {
-        console.error('Error en setUser:', e);
+        console.error('Error al configurar usuario en Chatwoot:', e);
       }
 
-      try {
-        window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
-      } catch (e) {
-        console.error('Error en setCustomAttributes:', e);
-      }
-
-      // Actualizar tarjeta y habilitar botón de reapertura
+      // Actualizar tarjeta de fondo
       setCardState(
         true, 
         "¡Atención iKiwi Argentina!", 
@@ -163,26 +171,25 @@
         true
       );
 
-      // Abrir el chat automáticamente al iniciar
+      // 3. Abrir la ventana de chat
       try {
         window.$chatwoot.toggle('open');
       } catch (e) {
         console.error('Error al abrir el widget:', e);
       }
-    }
+    }, 250);
+  }
 
-    function init() {
-      window.addEventListener("chatwoot:ready", setupChatwootUser);
+  function init() {
+    // Escuchar el evento nativo que emite el SDK cuando está listo
+    window.addEventListener("chatwoot:ready", setupChatwootUser);
 
-      var checkInterval = setInterval(function () {
+    // Timeout de respaldo por si el SDK tarda más de lo esperado
+    setTimeout(function () {
+      if (!chatReady) {
         if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
-          clearInterval(checkInterval);
           setupChatwootUser();
-        }
-      }, 300);
-
-      setTimeout(function () {
-        if (!chatReady) {
+        } else {
           setCardState(
             true, 
             "No pudimos cargar el chat", 
@@ -191,14 +198,15 @@
           );
           console.error('El SDK de Chatwoot no respondió a tiempo.');
         }
-      }, 8000);
-    }
+      }
+    }, 5000);
+  }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  </script>
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
 </body>
 </html>
