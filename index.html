@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atención al Cliente - iKiwi Argentina</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border: 1px solid #e2e8f0;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #006644;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1.5rem auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
+    p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
+  </style>
+
+  <!-- Script SDK de Chatwoot -->
+  <script>
+    (function(d,t) {
+     
+      var BASE_URL="https://chatwoot.ikiwi.net.ar";
+      var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+      g.src=BASE_URL+"/js/sdk.js";
+      g.defer = true;
+      g.async = true;
+      s.parentNode.insertBefore(g,s);
+      g.onload=function(){
+        window.chatwootSDK.run({
+          websiteToken: 'vUPWMKNzDMuT8qBUUQVogKee',
+          baseUrl: BASE_URL
+        });
+      }
+    })(document,'script');
+  </script>
+</head>
+<body>
+
+  <div class="card">
+    <div class="spinner"></div>
+    <h1>Iniciando chat de atención...</h1>
+    <p>Estamos conectando tu conversación. Si el chat no se abre automáticamente, presiona el botón azul en la esquina inferior derecha.</p>
+  </div>
+
+  <!-- Lógica de identificación de usuario -->
+  <script>
+    window.addEventListener("chatwoot:ready", function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nombre = urlParams.get('nombre');
+      const phone = urlParams.get('phone');
+      const email = urlParams.get('email');
+
+      // Si recibimos teléfono o correo, seteamos el usuario en Chatwoot
+      if (phone || email) {
+        window.$chatwoot.setUser(phone || email, {
+          name: nombre || "Usuario de WhatsApp",
+          phone_number: phone || "",
+          email: email || ""
+        });
+      }
+
+      // Atributo opcional para saber que proviene de la migración de WhatsApp
+      window.$chatwoot.setCustomAttributes({
+        origen: 'WhatsApp Migration'
+      });
+
+      // Abrir el widget de chat inmediatamente
+      window.$chatwoot.toggle('open');
+    });
+  </script>
+
+</body>
+</html>
