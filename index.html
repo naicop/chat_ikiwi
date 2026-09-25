@@ -40,6 +40,12 @@
     }
     h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
     p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
+
+    .cw-widget-holder .woot-widget-bubble,
+  iframe[name="chatwoot_live_chat_widget"] + button,
+  .woot--bubble-holder {
+    display: none !important;
+  }
   </style>
 
   <!-- Script SDK de Chatwoot -->
@@ -151,6 +157,33 @@
   } else {
     init();
   }
+
+   window.addEventListener("chatwoot:ready", function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  const nombre = urlParams.get('nombre');
+  let phone = urlParams.get('phone');
+  const email = urlParams.get('email');
+
+  if (phone) {
+    phone = phone.trim();
+    if (!phone.startsWith('+')) phone = '+' + phone.replace(/\D/g, '');
+  }
+
+  const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
+  const userAttributes = { name: nombre || "Usuario WhatsApp" };
+  if (email) userAttributes.email = email;
+  if (phone) userAttributes.phone_number = phone;
+
+  window.$chatwoot.setUser(identifier, userAttributes);
+
+  window.$chatwoot.setCustomAttributes({
+    origen: 'WhatsApp Migration'
+  });
+
+  // Ocultar la tarjeta base y desplegar la ventana de conversación completa
+  document.getElementById('card').style.display = 'none';
+  window.$chatwoot.toggle('open');
+});
 </script>
 </body>
 </html>
