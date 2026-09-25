@@ -1,84 +1,16 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Atención al Cliente - iKiwi Argentina</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f8fafc;
-      color: #0f172a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 1.5rem;
-    }
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 2.5rem 2rem;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-      border: 1px solid #e2e8f0;
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #006644;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1.5rem auto;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
-    p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
-  </style>
+<script>
+  var chatReady = false;
 
-  <!-- Script SDK de Chatwoot -->
-  <script>
-  window.chatwootSettings = {"position":"right","type":"expanded_bubble","launcherTitle":""};
-  (function(d,t) {
-    var BASE_URL="https://chatwoot.ikiwi.net.ar";
-    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-    g.src=BASE_URL+"/packs/js/sdk.js";
-    g.async = true;
-    s.parentNode.insertBefore(g,s);
-    g.onload=function(){
-      window.chatwootSDK.run({
-        websiteToken: 'vUPWMKNzDMuT8qBUUQVogKee',
-        baseUrl: BASE_URL
-      })
-    }
-  })(document,"script");
-</script>
+  function setupChatwootUser() {
+    if (chatReady || !window.$chatwoot) return;
+    chatReady = true;
 
-</head>
-<body>
-
-  <div class="card">
-    <div id="loader" class="spinner"></div>
-    <h1 id="title">Iniciando chat de atención...</h1>
-    <p id="description">Estamos conectando tu conversación. Si el chat no se abre automáticamente, presiona el botón en la esquina inferior derecha.</p>
-  </div>
-
-  <script>
-    function setupChatwootUser() {
-      if (!window.$chatwoot) return;
-
+    try {
       const urlParams = new URLSearchParams(window.location.search);
       const nombre = urlParams.get('nombre');
       let phone = urlParams.get('phone');
       const email = urlParams.get('email');
 
-      // Limpiar el teléfono para asegurarse de que sea solo números con el '+' (Formato E.164)
       if (phone) {
         phone = phone.trim();
         if (!phone.startsWith('+')) {
@@ -86,45 +18,51 @@
         }
       }
 
-      // Preparar el objeto de usuario únicamente con los datos que sí existen
       const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
-      const userAttributes = {
-        name: nombre || "Usuario de WhatsApp"
-      };
-
+      const userAttributes = { name: nombre || "Usuario de WhatsApp" };
       if (email) userAttributes.email = email;
       if (phone) userAttributes.phone_number = phone;
 
-      // 1. Identificar usuario en Chatwoot
       window.$chatwoot.setUser(identifier, userAttributes);
-
-      // 2. Asignar atributos de origen
-      window.$chatwoot.setCustomAttributes({
-        origen: 'WhatsApp Migration'
-      });
-
-      // 3. Abrir el chat automáticamente
-      window.$chatwoot.toggle('open');
-
-      // 4. Actualizar la tarjeta visualmente para confirmar que cargó
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('title').innerText = "¡Chat listo!";
-      document.getElementById('description').innerText = "Puedes chatear con nosotros desde el widget en la esquina inferior derecha.";
+    } catch (e) {
+      console.error('Error en setUser:', e);
     }
 
-    // Escuchar cuando el SDK esté listo
-    window.addEventListener("chatwoot:ready", function () {
+    try {
+      window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
+    } catch (e) {
+      console.error('Error en setCustomAttributes (¿existe el atributo "origen" en Ajustes > Atributos personalizados > Contacto?):', e);
+    }
+
+    // Actualizamos la tarjeta ANTES del toggle, así el usuario ve confirmación
+    // aunque el toggle falle por algún motivo.
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('title').innerText = "¡Chat listo!";
+    document.getElementById('description').innerText = "Puedes chatear con nosotros desde el widget en la esquina inferior derecha.";
+
+    try {
+      window.$chatwoot.toggle('open');
+    } catch (e) {
+      console.error('Error al abrir el widget:', e);
+    }
+  }
+
+  window.addEventListener("chatwoot:ready", setupChatwootUser);
+
+  var checkInterval = setInterval(function () {
+    if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
+      clearInterval(checkInterval);
       setupChatwootUser();
-    });
+    }
+  }, 300);
 
-    // Fallback de seguridad: Si el evento ya ocurrió antes de montar el listener, forzar ejecución
-    var checkInterval = setInterval(function() {
-      if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
-        clearInterval(checkInterval);
-        setupChatwootUser();
-      }
-    }, 300);
-  </script>
-
-</body>
-</html>
+  // Si a los 8 segundos nada cargó, avisamos que algo falló en vez de spinnear para siempre
+  setTimeout(function () {
+    if (!chatReady) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('title').innerText = "No pudimos cargar el chat";
+      document.getElementById('description').innerText = "Por favor recargá la página o contactanos por otro medio.";
+      console.error('El SDK de Chatwoot nunca emitió chatwoot:ready ni expuso window.$chatwoot. Revisá que chatwoot.ikiwi.net.ar/packs/js/sdk.js cargue sin errores de red/CORS.');
+    }
+  }, 8000);
+</script>
