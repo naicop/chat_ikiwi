@@ -69,8 +69,22 @@
     <p id="description">Estamos conectando tu conversación. Si el chat no se abre automáticamente, presiona el botón en la esquina inferior derecha.</p>
   </div>
 
-  <script>
+ <script>
   var chatReady = false;
+
+  function setLoaderState(hidden, title, desc) {
+    var loaderEl = document.getElementById('loader');
+    var titleEl = document.getElementById('title');
+    var descEl = document.getElementById('description');
+
+    if (loaderEl) loaderEl.style.display = hidden ? 'none' : '';
+    if (titleEl) titleEl.innerText = title;
+    if (descEl) descEl.innerText = desc;
+
+    if (!loaderEl || !titleEl || !descEl) {
+      console.error('No se encontraron uno o más elementos (#loader, #title, #description). Verificá que el HTML no esté siendo modificado por el servidor/CMS.');
+    }
+  }
 
   function setupChatwootUser() {
     if (chatReady || !window.$chatwoot) return;
@@ -102,14 +116,10 @@
     try {
       window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
     } catch (e) {
-      console.error('Error en setCustomAttributes (¿existe el atributo "origen" en Ajustes > Atributos personalizados > Contacto?):', e);
+      console.error('Error en setCustomAttributes (¿existe "origen" en Ajustes > Atributos personalizados > Contacto?):', e);
     }
 
-    // Actualizamos la tarjeta ANTES del toggle, así el usuario ve confirmación
-    // aunque el toggle falle por algún motivo.
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('title').innerText = "¡Chat listo!";
-    document.getElementById('description').innerText = "Puedes chatear con nosotros desde el widget en la esquina inferior derecha.";
+    setLoaderState(true, "¡Chat listo!", "Puedes chatear con nosotros desde el widget en la esquina inferior derecha.");
 
     try {
       window.$chatwoot.toggle('open');
@@ -118,25 +128,29 @@
     }
   }
 
-  window.addEventListener("chatwoot:ready", setupChatwootUser);
+  function init() {
+    window.addEventListener("chatwoot:ready", setupChatwootUser);
 
-  var checkInterval = setInterval(function () {
-    if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
-      clearInterval(checkInterval);
-      setupChatwootUser();
-    }
-  }, 300);
+    var checkInterval = setInterval(function () {
+      if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
+        clearInterval(checkInterval);
+        setupChatwootUser();
+      }
+    }, 300);
 
-  // Si a los 8 segundos nada cargó, avisamos que algo falló en vez de spinnear para siempre
-  setTimeout(function () {
-    if (!chatReady) {
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('title').innerText = "No pudimos cargar el chat";
-      document.getElementById('description').innerText = "Por favor recargá la página o contactanos por otro medio.";
-      console.error('El SDK de Chatwoot nunca emitió chatwoot:ready ni expuso window.$chatwoot. Revisá que chatwoot.ikiwi.net.ar/packs/js/sdk.js cargue sin errores de red/CORS.');
-    }
-  }, 8000);
+    setTimeout(function () {
+      if (!chatReady) {
+        setLoaderState(true, "No pudimos cargar el chat", "Por favor recargá la página o contactanos por otro medio.");
+        console.error('El SDK de Chatwoot nunca emitió chatwoot:ready ni expuso window.$chatwoot.');
+      }
+    }, 8000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 </script>
-
 </body>
 </html>
