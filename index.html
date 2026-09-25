@@ -40,7 +40,15 @@
     }
     h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
     p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
-
+/* --- REGLAS CSS PARA ELIMINAR LA BURBUJA NATIVA Y SUS DESPLAZAMIENTOS --- */
+    .woot-widget-bubble,
+    .cw-widget-holder .woot-widget-bubble,
+    .woot--bubble-holder,
+    iframe[name="chatwoot_live_chat_widget"] + button {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
   </style>
 
   <!-- Script SDK de Chatwoot -->
