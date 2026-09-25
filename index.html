@@ -2,10 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Atención al Cliente - iKiwi Argentina</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #f8fafc;
@@ -38,9 +43,22 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
-    p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
-/* --- REGLAS CSS PARA ELIMINAR LA BURBUJA NATIVA Y SUS DESPLAZAMIENTOS --- */
+    .btn-reopen {
+      margin-top: 1.5rem;
+      background-color: #006644;
+      color: white;
+      border: none;
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s ease;
+    }
+    .btn-reopen:hover { background-color: #004d33; }
+
+    /* --- REGLAS CSS PARA ELIMINAR LA BURBUJA NATIVA Y SUS DESPLAZAMIENTOS --- */
     .woot-widget-bubble,
     .cw-widget-holder .woot-widget-bubble,
     .woot--bubble-holder,
@@ -52,188 +70,135 @@
   </style>
 
   <!-- Script SDK de Chatwoot -->
- <script>
-  window.chatwootSettings = {"position":"right","type":"standard","launcherTitle":""};
-  (function(d,t) {
-    var BASE_URL="https://chatwoot.ikiwi.net.ar";
-    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-    g.src=BASE_URL+"/packs/js/sdk.js";
-    g.async = true;
-    s.parentNode.insertBefore(g,s);
-    g.onload=function(){
-      window.chatwootSDK.run({
-        websiteToken: 'vUPWMKNzDMuT8qBUUQVogKee',
-        baseUrl: BASE_URL
-      })
-    }
-  })(document,"script");
-</script>
-
+  <script>
+    window.chatwootSettings = { "position": "right", "type": "standard", "launcherTitle": "" };
+    (function(d,t) {
+      var BASE_URL = "https://chatwoot.ikiwi.net.ar";
+      var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+      g.src = BASE_URL + "/packs/js/sdk.js";
+      g.async = true;
+      s.parentNode.insertBefore(g,s);
+      g.onload = function(){
+        window.chatwootSDK.run({
+          websiteToken: 'vUPWMKNzDMuT8qBUUQVogKee',
+          baseUrl: BASE_URL
+        });
+      }
+    })(document,"script");
+  </script>
 </head>
 <body>
 
-  <div class="card">
-    <div id="loader" class="spinner"></div>
-    <h1 id="title">Iniciando chat de atención...</h1>
-    <p id="description">Estamos conectando tu conversación. Si el chat no se abre automáticamente, presiona el botón en la esquina inferior derecha.</p>
+  <div class="card" id="main-card">
+    <div class="spinner" id="loader"></div>
+    <h2 id="card-title">Iniciando atención...</h2>
+    <p id="card-desc" style="color: #64748b; margin-top: 0.5rem; font-size: 0.95rem;">
+      Conectando con tu chat de iKiwi...
+    </p>
+    
+    <button id="reopen-btn" class="btn-reopen" style="display: none;" onclick="openChat()">
+      Abrir chat de atención
+    </button>
   </div>
 
- <script>
-  var chatReady = false;
+  <script>
+    var chatReady = false;
 
-  function setLoaderState(hidden, title, desc) {
-    var loaderEl = document.getElementById('loader');
-    var titleEl = document.getElementById('title');
-    var descEl = document.getElementById('description');
-
-    if (loaderEl) loaderEl.style.display = hidden ? 'none' : '';
-    if (titleEl) titleEl.innerText = title;
-    if (descEl) descEl.innerText = desc;
-
-    if (!loaderEl || !titleEl || !descEl) {
-      console.error('No se encontraron uno o más elementos (#loader, #title, #description). Verificá que el HTML no esté siendo modificado por el servidor/CMS.');
+    function openChat() {
+      if (window.$chatwoot) {
+        window.$chatwoot.toggle('open');
+      }
     }
-  }
 
-  function setupChatwootUser() {
-    if (chatReady || !window.$chatwoot) return;
-    chatReady = true;
+    function setCardState(loaderHidden, title, desc, showButton) {
+      var loaderEl = document.getElementById('loader');
+      var titleEl = document.getElementById('card-title');
+      var descEl = document.getElementById('card-desc');
+      var btnEl = document.getElementById('reopen-btn');
 
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nombre = urlParams.get('nombre');
-      let phone = urlParams.get('phone');
-      const email = urlParams.get('email');
+      if (loaderEl) loaderEl.style.display = loaderHidden ? 'none' : '';
+      if (titleEl) titleEl.innerText = title;
+      if (descEl) descEl.innerText = desc;
+      if (btnEl) btnEl.style.display = showButton ? 'block' : 'none';
+    }
 
-      if (phone) {
-        phone = phone.trim();
-        if (!phone.startsWith('+')) {
-          phone = '+' + phone.replace(/\D/g, '');
+    function setupChatwootUser() {
+      if (chatReady || !window.$chatwoot) return;
+      chatReady = true;
+
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const nombre = urlParams.get('nombre');
+        let phone = urlParams.get('phone');
+        const email = urlParams.get('email');
+
+        if (phone) {
+          phone = phone.trim();
+          if (!phone.startsWith('+')) {
+            phone = '+' + phone.replace(/\D/g, '');
+          }
         }
+
+        const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
+        const userAttributes = { name: nombre || "Usuario de WhatsApp" };
+        if (email) userAttributes.email = email;
+        if (phone) userAttributes.phone_number = phone;
+
+        window.$chatwoot.setUser(identifier, userAttributes);
+      } catch (e) {
+        console.error('Error en setUser:', e);
       }
 
-      const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
-      const userAttributes = { name: nombre || "Usuario de WhatsApp" };
-      if (email) userAttributes.email = email;
-      if (phone) userAttributes.phone_number = phone;
-
-      window.$chatwoot.setUser(identifier, userAttributes);
-    } catch (e) {
-      console.error('Error en setUser:', e);
-    }
-
-    try {
-      window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
-    } catch (e) {
-      console.error('Error en setCustomAttributes (¿existe "origen" en Ajustes > Atributos personalizados > Contacto?):', e);
-    }
-
-    setLoaderState(true, "¡Chat listo!", "Puedes chatear con nosotros desde el widget en la esquina inferior derecha.");
-
-    try {
-      window.$chatwoot.toggle('open');
-    } catch (e) {
-      console.error('Error al abrir el widget:', e);
-    }
-  }
-
-  function init() {
-    window.addEventListener("chatwoot:ready", setupChatwootUser);
-
-    var checkInterval = setInterval(function () {
-      if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
-        clearInterval(checkInterval);
-        setupChatwootUser();
+      try {
+        window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
+      } catch (e) {
+        console.error('Error en setCustomAttributes:', e);
       }
-    }, 300);
 
-    setTimeout(function () {
-      if (!chatReady) {
-        setLoaderState(true, "No pudimos cargar el chat", "Por favor recargá la página o contactanos por otro medio.");
-        console.error('El SDK de Chatwoot nunca emitió chatwoot:ready ni expuso window.$chatwoot.');
+      // Actualizar tarjeta y habilitar botón de reapertura
+      setCardState(
+        true, 
+        "¡Atención iKiwi Argentina!", 
+        "Si cerraste la ventana de chat, puedes volver a abrirla presionando el botón de abajo.", 
+        true
+      );
+
+      // Abrir el chat automáticamente al iniciar
+      try {
+        window.$chatwoot.toggle('open');
+      } catch (e) {
+        console.error('Error al abrir el widget:', e);
       }
-    }, 8000);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-   window.addEventListener("chatwoot:ready", function () {
-  const urlParams = new URLSearchParams(window.location.search);
-  const nombre = urlParams.get('nombre');
-  let phone = urlParams.get('phone');
-  const email = urlParams.get('email');
-
-  if (phone) {
-    phone = phone.trim();
-    if (!phone.startsWith('+')) phone = '+' + phone.replace(/\D/g, '');
-  }
-
-  const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
-  const userAttributes = { name: nombre || "Usuario WhatsApp" };
-  if (email) userAttributes.email = email;
-  if (phone) userAttributes.phone_number = phone;
-
-  window.$chatwoot.setUser(identifier, userAttributes);
-
-  window.$chatwoot.setCustomAttributes({
-    origen: 'WhatsApp Migration'
-  });
-
-  // Ocultar la tarjeta base y desplegar la ventana de conversación completa
-  document.getElementById('card').style.display = 'none';
-  window.$chatwoot.toggle('open');
-});
-
-  
-  function openDirectChat() {
-    if (!window.$chatwoot) return;
-
-    // 1. Ocultar la burbuja flotante verde para que no tape el input de texto en mobile
-    if (window.$chatwoot.hideMessage) {
-      window.$chatwoot.hideMessage();
     }
 
-    // 2. Forzar salto directo a la ventana de chat activa (sin pasar por la home del widget)
-    if (typeof window.$chatwoot.popout === 'function') {
-      window.$chatwoot.toggle('open');
+    function init() {
+      window.addEventListener("chatwoot:ready", setupChatwootUser);
+
+      var checkInterval = setInterval(function () {
+        if (window.$chatwoot && typeof window.$chatwoot.setUser === 'function') {
+          clearInterval(checkInterval);
+          setupChatwootUser();
+        }
+      }, 300);
+
+      setTimeout(function () {
+        if (!chatReady) {
+          setCardState(
+            true, 
+            "No pudimos cargar el chat", 
+            "Por favor recargá la página o contactanos por otro medio.", 
+            false
+          );
+          console.error('El SDK de Chatwoot no respondió a tiempo.');
+        }
+      }, 8000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
     } else {
-      window.$chatwoot.toggle('open');
+      init();
     }
-  }
-
-  window.addEventListener("chatwoot:ready", function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const nombre = urlParams.get('nombre');
-    let phone = urlParams.get('phone');
-    const email = urlParams.get('email');
-
-    if (phone) {
-      phone = phone.trim();
-      if (!phone.startsWith('+')) phone = '+' + phone.replace(/\D/g, '');
-    }
-
-    const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
-    const userAttributes = { name: nombre || "Usuario WhatsApp" };
-    if (email) userAttributes.email = email;
-    if (phone) userAttributes.phone_number = phone;
-
-    // Seteamos los datos del usuario
-    window.$chatwoot.setUser(identifier, userAttributes);
-    window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
-
-    // Cambiar la tarjeta de fondo por si el usuario cierra la ventana del chat
-    document.getElementById('card-title').innerText = "¡Atención iKiwi Argentina!";
-    document.getElementById('card-desc').innerText = "Si cerraste la ventana de chat, puedes volver a abrirla presionando el botón de abajo.";
-    document.getElementById('reopen-btn').style.display = 'block';
-
-    // Abrir el chat directamente
-    openDirectChat();
-  });
-
-</script>
+  </script>
 </body>
 </html>
