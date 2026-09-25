@@ -41,11 +41,6 @@
     h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
     p { font-size: 0.95rem; color: #64748b; line-height: 1.5; }
 
-    .cw-widget-holder .woot-widget-bubble,
-  iframe[name="chatwoot_live_chat_widget"] + button,
-  .woot--bubble-holder {
-    display: none !important;
-  }
   </style>
 
   <!-- Script SDK de Chatwoot -->
@@ -184,6 +179,53 @@
   document.getElementById('card').style.display = 'none';
   window.$chatwoot.toggle('open');
 });
+
+  
+  function openDirectChat() {
+    if (!window.$chatwoot) return;
+
+    // 1. Ocultar la burbuja flotante verde para que no tape el input de texto en mobile
+    if (window.$chatwoot.hideMessage) {
+      window.$chatwoot.hideMessage();
+    }
+
+    // 2. Forzar salto directo a la ventana de chat activa (sin pasar por la home del widget)
+    if (typeof window.$chatwoot.popout === 'function') {
+      window.$chatwoot.toggle('open');
+    } else {
+      window.$chatwoot.toggle('open');
+    }
+  }
+
+  window.addEventListener("chatwoot:ready", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nombre = urlParams.get('nombre');
+    let phone = urlParams.get('phone');
+    const email = urlParams.get('email');
+
+    if (phone) {
+      phone = phone.trim();
+      if (!phone.startsWith('+')) phone = '+' + phone.replace(/\D/g, '');
+    }
+
+    const identifier = phone || email || 'anon_' + Math.random().toString(36).substring(2, 9);
+    const userAttributes = { name: nombre || "Usuario WhatsApp" };
+    if (email) userAttributes.email = email;
+    if (phone) userAttributes.phone_number = phone;
+
+    // Seteamos los datos del usuario
+    window.$chatwoot.setUser(identifier, userAttributes);
+    window.$chatwoot.setCustomAttributes({ origen: 'WhatsApp Migration' });
+
+    // Cambiar la tarjeta de fondo por si el usuario cierra la ventana del chat
+    document.getElementById('card-title').innerText = "¡Atención iKiwi Argentina!";
+    document.getElementById('card-desc').innerText = "Si cerraste la ventana de chat, puedes volver a abrirla presionando el botón de abajo.";
+    document.getElementById('reopen-btn').style.display = 'block';
+
+    // Abrir el chat directamente
+    openDirectChat();
+  });
+
 </script>
 </body>
 </html>
